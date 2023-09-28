@@ -1,0 +1,260 @@
+<!-- indeedapp\indeed\templates\indeed\user.html -->
+{% extends 'indeed/base.html' %}
+{% block content %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .bookmark-widget {
+            border: 2px solid black;
+            background-color: #fff;
+            border-radius: 5px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .job-title {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .job-title h3 {
+            margin: 0;
+            color: #333;
+        }
+
+        .btn-container {
+            display: flex;
+            justify-content: flex-end;
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+        }
+
+        .btn-apply {
+            background-color: lightgray;
+            font-size: 13px;
+            color: #fff;
+            border: 2px solid black;
+            border-radius: 5px;
+            padding: 8px 15px;
+            font-weight: bold;
+            text-decoration: none;
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+            cursor: pointer;
+            margin-left: 10px;
+            text-align: center;
+        }
+
+        .show-more-btn {
+            background-color: midnightblue;
+            font-size: 13px;
+            color: #fff;
+            border: 2px solid black;
+            border-radius: 5px;
+            padding: 8px 15px;
+            font-weight: bold;
+            text-decoration: none;
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+            cursor: pointer;
+            margin-left: 10px;
+            text-align: center;
+        }
+
+        .btn-apply:hover,
+        .show-more-btn:hover {
+            background-color: black;
+            border-color: gray;
+        }
+
+        .job-description {
+            display: none;
+            color: #555;
+        }
+
+        .job-description.show {
+            display: block;
+            margin-top: 10px;
+        }
+
+        .bookmark-btn {
+            width: 15%;
+        }
+
+        .notification {
+            display: none;
+            position: fixed;
+            top: 20%;
+            right: 10px;
+            padding: 10px;
+            border-radius: 5px;
+            color: red;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        <strong>Message:</strong> {{ message }}
+    </div>
+    {% endfor %}
+
+    {% if user.is_authenticated %}
+
+    <div id="popup-message" class="alert alert-success alert-dismissible fade show" role="alert" style="display: none;">
+        <strong>Hello {{ first_name }}</strong> You're successfully logged in.
+    </div>
+    {% endif %}
+
+    <div class="container">
+        <h1>Your Bookmarked Job Listings</h1>
+
+        <div id="bookmarked-listings"></div>
+    </div>
+
+    <div class="notification" id="notification"></div>
+
+    
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            var popup = document.getElementById("popup-message");
+            if (popup) {
+                popup.style.display = "block";
+                setTimeout(function () {
+                    popup.style.display = "none";
+                }, 3000);
+            }
+        });
+
+            var user_id = '{{ request.session.user_id }}';
+            var unique_key = '{{ request.session.unique_key|safe }}';
+
+            async function fetchData(url, user_id, unique_key) {
+                try {
+                    const fullurl = `${url}?user_id=${user_id}&unique_key=${unique_key}`;
+
+                    const response = await fetch(fullurl, {
+                        method: 'GET',
+                    });
+                    const data = await response.json();
+
+                    console.log("Response data:", data);
+
+                    if (data.error) {
+                        throw new Error(data.error);
+                    }
+
+                    return data;
+                } catch (error) {
+                    console.error(error);
+                    return [];
+                }
+            }
+
+            console.log("User ID:", user_id);
+            console.log("Unique Key:", unique_key);
+
+            async function displayBookmarkedListings(user_id, unique_key) {
+                const response = await fetchData('http://127.0.0.1:8000/get_user_bookmark', user_id, unique_key);
+                // const response = await fetchData(`http://127.0.0.1:8000/get_data/get_user_bookmark?user_id=${user_id}&unique_key=${unique_key}`);
+                const bookmarkedListings = response.bookmarked_data;
+                const bookmarkedListingsContainer = document.getElementById('bookmarked-listings');
+
+                bookmarkedListings.forEach((job) => {
+                    const widget = document.createElement('div');
+                    widget.className = 'bookmark-widget';
+
+                    widget.innerHTML = `
+                    <div class="job-title">
+                        <h3>${job.job_title}</h3>
+                        <button class="btn bookmark-btn" data-fccid="${job.fccid}">Remove Bookmark</button>
+                    </div>
+                    <p><strong>Company:</strong> ${job.company_name}</p>
+                    <p><strong>Location:</strong> ${job.company_location}</p>
+                    <p><strong>Salary:</strong> ${job.salary}</p>
+                    <a class="btn-apply" href="${job.url}" target="_blank">Apply</a>
+                    <button class="btn show-more-btn">Show More</button>
+                    <p class="job-description">${job.job_description}</p>
+                `;
+
+                    const jobDescription = widget.querySelector('.job-description');
+                    jobDescription.style.whiteSpace = 'pre-line';
+
+                    const showMoreBtn = widget.querySelector('.show-more-btn');
+
+                    showMoreBtn.addEventListener('click', () => {
+                        jobDescription.classList.toggle('show');
+                        showMoreBtn.textContent = jobDescription.classList.contains('show') ? 'Hide Description' : 'Show more';
+                    });
+
+                    jobDescription.classList.remove('show');
+
+                    const removeBookmarkButton = widget.querySelector('.bookmark-btn');
+                    removeBookmarkButton.addEventListener('click', async () => {
+                        const fccid = removeBookmarkButton.getAttribute('data-fccid');
+
+                        const response = await fetch('http://127.0.0.1:8000/remove_bookmark', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${unique_key}`,
+                                'User-Id': user_id,
+                            },
+                            body: JSON.stringify({ fccid }),
+                        });
+
+                        const responseData = await response.json();
+
+                        if (responseData.message) {
+                            const notification = document.getElementById('notification');
+                            notification.textContent = responseData.message;
+                            notification.style.display = 'block';
+
+                            setTimeout(() => {
+                                notification.style.display = 'none';
+                            }, 2000);
+
+                          
+                            widget.remove();
+                        } else {
+                            console.error('Error', response.status);
+                        }
+                    });
+
+                    bookmarkedListingsContainer.appendChild(widget);
+                });
+            }
+
+
+            displayBookmarkedListings(user_id, unique_key);
+    </script>
+</body>
+
+</html>
+{% endblock %}

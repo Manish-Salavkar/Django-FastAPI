@@ -1,0 +1,39 @@
+{% extends 'indeed/base.html' %}
+{% block content %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+
+    <style>
+        .alert-success {
+            color: red;
+        }
+    </style>
+</head>
+
+<body>
+    <h2>Home</h2>
+    {% for message in messages %}
+    <div id="popup" class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+        {{ message }}
+    </div>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            var popup = document.getElementById("popup");
+            if (popup) {
+                popup.style.display = "block";
+                setTimeout(function() {
+                    popup.style.display = "none";
+                }, 3000);
+            }
+        });
+    </script>
+    {% endfor %}
+</body>
+
+</html>
+{% endblock %}

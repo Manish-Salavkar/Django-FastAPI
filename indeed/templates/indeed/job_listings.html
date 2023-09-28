@@ -1,0 +1,262 @@
+<!-- indeedapp\indeed\templates\indeed\joblistings.html -->
+{% extends 'indeed/base.html' %}
+{% block content %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jobs</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .job-widget {
+            border: 2px solid black;
+            background-color: #fff;
+            border-radius: 5px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .job-title {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .job-title h3 {
+            margin: 0;
+            color: #333;
+        }
+
+        .btn-container {
+            display: flex;
+            justify-content: flex-end;
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+        }
+
+        .btn-apply {
+            background-color: lightgray;
+            font-size: 13px;
+            color: #fff;
+            border: 2px solid black;
+            border-radius: 5px;
+            padding: 8px 15px;
+            font-weight: bold;
+            text-decoration: none;
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+            cursor: pointer;
+            margin-left: 10px;
+            text-align: center;
+        }
+
+        .show-more-btn {
+            background-color: midnightblue;
+            font-size: 13px;
+            color: #fff;
+            border: 2px solid black;
+            border-radius: 5px;
+            padding: 8px 15px;
+            font-weight: bold;
+            text-decoration: none;
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+            cursor: pointer;
+            margin-left: 10px;
+            text-align: center;
+        }
+
+        .btn-apply:hover,
+        .show-more-btn:hover {
+            background-color: black;
+            border-color: gray;
+        }
+
+        .job-description {
+            display: none;
+            color: #555;
+        }
+
+        .job-description.show {
+            display: block;
+            margin-top: 10px;
+        }
+
+        .bookmark-btn {
+            width: 15%;
+        }
+
+        .notification {
+            display: none;
+            position: fixed;
+            top: 20%;
+            right: 10px;
+            padding: 10px;
+            border-radius: 5px;
+            color: red;
+            font-weight: bold;
+            
+        }
+
+
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <h1>Job Listings</h1>
+
+        <div id="job-listings"></div>
+        <div id="detailed-data"></div>
+    </div>
+
+    <div class="notification" id="notification">
+
+    </div>
+
+
+
+    <script>
+        async function fetchData(url1) {
+            try {
+                const response = await fetch(url1);
+                const data = await response.json();
+
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                return data;
+            } catch (error) {
+                console.error(error);
+                return [];
+            }
+        }
+
+        function getCSRFTOKEN() {
+            const cookieValue = document.cookie
+                .split('; ')
+                .find(row => row.startsWith('csrftoken'))
+                .split('=')[1];
+            return cookieValue;
+        }
+
+        async function displayJobListings() {
+            const jobListings = await fetchData('http://127.0.0.1:8000/get_data/all');
+            const jobListingsContainer = document.getElementById('job-listings');
+
+            jobListings.forEach((job) => {
+                const widget = document.createElement('div');
+                widget.className = 'job-widget';
+                widget.id = `widget-${job.fccid}`;
+
+                widget.innerHTML = `
+                    <h3>${job.job_title}</h3>
+                    <button class="btn bookmark-btn" data-widget-id="${widget.id}">Bookmark</button>
+                    <p><strong>Company:</strong> ${job.company_name}</p>
+                    <p><strong>Location:</strong> ${job.company_location}</p>
+                    <p><strong>Salary:</strong> ${job.salary}</p>
+                    <a class="btn-apply" href="${job.url}" target="_blank">Apply</a>
+                    <button class="btn show-more-btn">Show More</button>
+                    <p class="job-description">${job.job_description}</p>
+                `;
+
+                const jobDescription = widget.querySelector('.job-description');
+                jobDescription.style.whiteSpace = 'pre-line';
+
+                const showMoreBtn = widget.querySelector('.show-more-btn');
+
+                showMoreBtn.addEventListener('click', () => {
+                    jobDescription.classList.toggle('show');
+                    showMoreBtn.textContent = jobDescription.classList.contains('show') ? 'Hide Description' : 'Show more';
+                });
+
+                jobDescription.classList.remove('show');
+
+
+                const bookmarkButton = widget.querySelector('.bookmark-btn');
+                bookmarkButton.addEventListener('click', async () => {
+
+
+                    const widgetId_whole = bookmarkButton.getAttribute('data-widget-id');
+                    const parts = widgetId_whole.split('-');
+                    const widgetId = parts[1];
+                    console.log(widgetId)
+
+
+
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = '/bookmark_view';
+
+                    const widgetIdInput = document.createElement('input');
+                    widgetIdInput.type = 'hidden';
+                    widgetIdInput.name = 'fccid';
+                    widgetIdInput.value = widgetId;
+
+                    const csrfTokenInput = document.createElement('input');
+                    csrfTokenInput.type = 'hidden';
+                    csrfTokenInput.name = 'csrfmiddlewaretoken';
+                    csrfTokenInput.value = getCSRFTOKEN();
+
+                    form.appendChild(widgetIdInput);
+                    form.appendChild(csrfTokenInput)
+
+                    document.body.appendChild(form);
+
+                    const response = await fetch(form.action, {
+                        method: form.method,
+                        body: new FormData(form),
+                    });
+
+                    const responseData = await response.json();
+
+                    if (responseData.message) {
+                        const notification = document.getElementById('notification');
+                        notification.textContent = responseData.message;
+                        notification.style.display = 'block';
+
+                        setTimeout(() => {
+                            notification.style.display = 'none';
+                        }, 2000);
+                    }
+                    else {
+                        console.error('Error', response.status)
+                    }
+
+
+                });
+
+                jobListingsContainer.appendChild(widget);
+            });
+        }
+
+        window.addEventListener('load', displayJobListings);
+    </script>
+
+
+
+
+</body>
+
+</html>
+{% endblock %}

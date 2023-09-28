@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dummy Scraper</title>
+
+    <style>
+        body {
+            font-family: Sans-Serif;
+            margin: 0;
+        }
+
+        .menu-container {
+            background: #232323;
+            color: #cdcdcd;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .menu-container a {
+            text-decoration: none;
+            color: #cdcdcd;
+            transition: color 0.3s ease;
+        }
+
+        .menu-container a:hover {
+            color: #00C6A7;
+        }
+
+        .menu-container label {
+            display: block;
+            width: 33px;
+            height: 4px;
+            margin-bottom: 5px;
+            background: #cdcdcd;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+
+        .menu ul {
+            padding: 0;
+            display: flex;
+            align-items: center;
+        }
+
+        .menu li {
+            padding: 0;
+            font-size: 26px; 
+            list-style: none;
+            display: inline-block;
+            margin-right: 20px;
+        }
+
+        .menu li:last-child {
+            margin-right: 0; 
+            margin-left: auto;
+        }
+
+        /* Mobile styles */
+        @media only screen and (max-width: 767px) {
+            .menu-container {
+                display: flex;
+                justify-content: space-between;
+            }
+
+            .menu-logo img {
+                max-height: 30px;
+            }
+
+            .menu ul {
+                display: none;
+                flex-direction: column;
+                background-color: #232323;
+                position: absolute;
+                top: 60px;
+                left: 0;
+                width: 100%;
+                padding: 0;
+                margin: 0;
+                z-index: 1;
+                box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
+            }
+
+            .menu-container input:checked + ul {
+                display: flex;
+            }
+
+            .menu li {
+                padding: 10px;
+            }
+        }
+
+        /* Desktop styles */
+        @media only screen and (min-width: 768px) {
+            .menu-container {
+                width: 100%;
+                display: flex;
+                justify-content: space-between;
+            }
+
+            .menu ul {
+                display: flex;
+                background-color: transparent;
+                position: relative;
+                top: auto;
+                left: auto;
+                width: auto;
+                box-shadow: none;
+            }
+
+            .menu li {
+                padding: 0 20px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="menu-container">
+        <!-- Menu items -->
+        <ul class="menu">
+            <li>
+                <a href="#dummy">Dummy Scraper</a>
+            </li>
+            <li>
+                <a href="{% url 'home' %}">Home</a>
+            </li>
+            <li>
+                <a href="{% url 'job_listings' %}">Job Listings</a>
+            </li>
+            {% if not user.is_authenticated %}
+            <li>
+                <a href="{% url 'signup' %}">Sign Up</a>
+            </li>
+            <li>
+                <a href="{% url 'signin' %}">Sign In</a>
+            </li>
+            {% endif %}
+            {% if user.is_authenticated %}
+            <li>
+                <a href="{% url 'signout' %}">Sign Out</a>
+            </li>
+            <li>
+                <a href="{% url 'user_view' username=request.user.username %}">User</a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    <div class="container">
+        {% block content %}{% endblock %}
+    </div>
+</body>
+
+</html>
